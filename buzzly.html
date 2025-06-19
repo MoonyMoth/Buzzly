@@ -1,0 +1,426 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Buzzly Dashboard</title>
+    <script src="https://cdn.tailwindcss.com">      document.getElementById('logout-button').addEventListener('click', () => {
+        auth.signOut().then(() => {
+          authModal.style.display = 'flex';
+        });
+      });
+      // Pomodoro Timer Logic
+      let pomodoroTimer;
+      let sessionLength = 25;
+let pomodoroTime = sessionLength * 60;
+      let running = false;
+
+      const timeDisplay = document.getElementById('pomodoro-time');
+      const startButton = document.getElementById('pomodoro-start');
+
+      function formatTime(seconds) {
+        const m = Math.floor(seconds / 60).toString().padStart(2, '0');
+        const s = (seconds % 60).toString().padStart(2, '0');
+        return `${m}:${s}`;
+      }
+
+      function updateDisplay() {
+        timeDisplay.textContent = formatTime(pomodoroTime);
+      }
+
+      document.getElementById('session-length').addEventListener('change', (e) => {
+  sessionLength = parseInt(e.target.value);
+  if (!running) {
+    pomodoroTime = sessionLength * 60;
+    updateDisplay();
+  }
+});
+
+startButton.addEventListener('click', () => {
+        if (!running) {
+          running = true;
+          startButton.textContent = 'Pause';
+          pomodoroTimer = setInterval(() => {
+            if (pomodoroTime > 0) {
+              pomodoroTime--;
+              updateDisplay();
+            } else {
+              clearInterval(pomodoroTimer);
+              startButton.textContent = 'Start';
+              running = false;
+              pomodoroTime = sessionLength * 60;
+              updateDisplay();
+              alert("Time's up! Take a break.");
+            }
+          }, 1000);
+        } else {
+          clearInterval(pomodoroTimer);
+          running = false;
+          startButton.textContent = 'Start';
+        }
+      });
+
+      updateDisplay();
+  const profileWrapper = document.getElementById('profile-menu-wrapper');
+  const profileMenu = document.getElementById('profile-menu');
+  let menuTimeout;
+
+  const profileBtn = profileWrapper.querySelector('img');
+
+profileBtn.addEventListener('click', (e) => {
+  e.stopPropagation();
+  const isHidden = profileMenu.classList.contains('hidden');
+  document.querySelectorAll('.dropdown-menu').forEach(menu => menu.classList.add('hidden'));
+  if (isHidden) {
+    profileMenu.classList.remove('hidden');
+  }
+});
+  profileMenu.classList.toggle('hidden');
+});
+
+document.addEventListener('click', (e) => {
+  if (!profileWrapper.contains(e.target) && !profileMenu.contains(e.target)) {
+    profileMenu.classList.add('hidden');
+  }
+});
+  }
+});
+
+  
+    }, 200);
+  });
+import { getFirestore, doc, setDoc, getDoc } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-firestore.js";
+import { getStorage, ref, uploadBytes, getDownloadURL } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-storage.js";
+
+const db = getFirestore(app);
+const storage = getStorage(app);
+
+const editProfileForm = document.querySelector('#edit-profile-modal form');
+const usernameInput = editProfileForm.querySelector('input[type="text"]');
+const profilePictureInput = document.getElementById('profile-picture-file');
+const buzzInput = editProfileForm.querySelector('textarea');
+
+editProfileForm.addEventListener('submit', async (e) => {
+  e.preventDefault();
+  const user = auth.currentUser;
+  if (!user) return;
+
+  let profilePicURL = "";
+
+  // Handle file upload if a file is selected
+  if (profilePictureInput.files.length > 0) {
+    const file = profilePictureInput.files[0];
+    const storageRef = ref(storage, `profilePictures/${user.uid}`);
+    await uploadBytes(storageRef, file);
+    profilePicURL = await getDownloadURL(storageRef);
+  }
+
+  const userRef = doc(db, "users", user.uid);
+  await setDoc(userRef, {
+    username: usernameInput.value,
+    profilePicture: profilePicURL,
+    buzz: buzzInput.value
+  });
+
+  alert("Profile saved!");
+  editProfileModal.classList.add('hidden');
+});
+
+// Optional: Load saved profile info on login
+onAuthStateChanged(auth, async (user) => {
+  if (user && user.emailVerified) {
+    const userDoc = await getDoc(doc(db, "users", user.uid));
+    if (userDoc.exists()) {
+      const data = userDoc.data();
+      usernameInput.value = data.username || "";
+      buzzInput.value = data.buzz || "";
+    }
+  }
+});
+  const settingsBtn = document.querySelector('#profile-menu button:nth-child(2)');
+  const settingsModal = document.getElementById('settings-modal');
+  const closeSettingsBtn = document.getElementById('close-settings');
+
+  settingsBtn.addEventListener('click', () => {
+    settingsModal.classList.remove('hidden');
+
+    const user = auth.currentUser;
+    if (user) {
+      document.getElementById('settings-email').textContent = user.email;
+      document.getElementById('settings-created').textContent = new Date(user.metadata.creationTime).toLocaleString();
+
+      getDoc(doc(db, "users", user.uid)).then((docSnap) => {
+  if (docSnap.exists()) {
+    const data = docSnap.data();
+    document.getElementById('settings-username').textContent = data.username || "";
+    document.getElementById('settings-buzz').textContent = data.buzz || "";
+    if (data.profilePicture) {
+      document.getElementById('settings-profile-pic').src = data.profilePicture;
+    }
+  }
+});
+    }
+  });
+
+  closeSettingsBtn.addEventListener('click', () => {
+    settingsModal.classList.add('hidden');
+  });
+const socialBtn = document.getElementById('social-button');
+const socialModal = document.getElementById('social-modal');
+const closeSocialBtn = document.getElementById('close-social');
+
+socialBtn.addEventListener('click', () => {
+  socialModal.classList.remove('hidden');
+});
+
+closeSocialBtn.addEventListener('click', () => {
+  socialModal.classList.add('hidden');
+});
+</script>
+    <script type="module">
+      // Firebase SDK
+      import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-app.js";
+      import { getAuth, createUserWithEmailAndPassword, signInWithEmailAndPassword, sendEmailVerification, onAuthStateChanged } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-auth.js";
+
+      const firebaseConfig = {
+        apiKey: "AIzaSyACXLvZwXLRDNEzKc_aFSLXVWx4haM8WTM",
+        authDomain: "buzzly-fb0db.firebaseapp.com",
+        projectId: "buzzly-fb0db",
+        storageBucket: "buzzly-fb0db.firebasestorage.app",
+        messagingSenderId: "476186621084",
+        appId: "1:476186621084:web:e8cd2925fd5988b3bfa959"
+      };
+
+      const app = initializeApp(firebaseConfig);
+      const auth = getAuth();
+
+      const authForm = document.getElementById('auth-form');
+      const authModal = document.getElementById('auth-modal');
+      const emailInput = document.getElementById('email');
+      const passwordInput = document.getElementById('password');
+
+      authForm.addEventListener('submit', (e) => {
+        e.preventDefault();
+        const email = emailInput.value;
+        const password = passwordInput.value;
+
+        // Try signing in first
+        signInWithEmailAndPassword(auth, email, password)
+          .then((userCredential) => {
+            const user = userCredential.user;
+            if (user.emailVerified) {
+              authModal.style.display = 'none';
+            } else {
+              document.getElementById('verify-message').classList.remove('hidden');
+            }
+          })
+          .catch((error) => {
+            // If sign-in fails, try creating an account
+            createUserWithEmailAndPassword(auth, email, password)
+              .then((userCredential) => {
+                const user = userCredential.user;
+                sendEmailVerification(user).then(() => {
+                  alert("Signup successful! Please check your email to verify your account.");
+                });
+              })
+              .catch((error) => {
+                alert(error.message);
+              });
+          });
+      });
+
+      onAuthStateChanged(auth, (user) => {
+  const userInfoBar = document.getElementById('user-info');
+  const logoutButton = document.getElementById('logout-button');
+  if (user && user.emailVerified) {
+    authModal.style.display = 'none';
+    userInfoBar.classList.remove('hidden');
+    userInfoBar.innerText = `Logged in as: ${user.email}`;
+    logoutButton.classList.remove('hidden');
+  } else {
+    userInfoBar.classList.add('hidden');
+    logoutButton.classList.add('hidden');
+  }
+});
+    </script>
+    <link href="https://fonts.googleapis.com/css2?family=Crimson+Text&display=swap" rel="stylesheet">
+    <style>
+      body {
+        background-color: #fdfaf5; /* soft beige background */
+        font-family: 'Crimson Text', serif;
+      }
+    </style>
+  </head>
+  <body class="min-h-screen relative overflow-hidden">
+    <!-- Customizable Background Scene Placeholder -->
+    <div class="absolute inset-0 bg-cover bg-center opacity-10 z-0" style="background-image: url('');" id="scene-background"></div>
+
+    <!-- Header -->
+    <header class="relative z-10 text-center mt-0  pb-4 bg-[#d6bfa6] bg-opacity-90 w-full pt-6">
+      <h1 class="text-5xl font-bold text-[#5a3e2b]">Buzzly</h1>
+      <p class="text-lg text-[#5a3e2b]">~ the fun way to learn ~</p>
+    </header>
+
+    <!-- User Info + Logout -->
+    <div class="relative z-10 text-center mt-4">
+      
+      
+    </div>
+
+    <!-- Authentication Modal -->
+    <div class="fixed inset-0 bg-black bg-opacity-40 flex items-center justify-center z-50" id="auth-modal">
+      <div class="bg-white rounded-xl shadow-lg p-8 w-full max-w-md">
+        <h2 class="text-2xl font-bold text-[#5a3e2b] mb-4 text-center">Welcome to Buzzly</h2>
+        <div id="verify-message" class="text-red-600 text-center text-sm mb-2 hidden">
+          Please verify your email address before logging in.
+        </div>
+        <form id="auth-form" class="flex flex-col gap-4">
+          <input type="email" id="email" placeholder="Email" class="border border-[#d6bfa6] rounded p-2 focus:outline-none focus:ring-2 focus:ring-[#5a3e2b]" required />
+          <input type="password" id="password" placeholder="Password" class="border border-[#d6bfa6] rounded p-2 focus:outline-none focus:ring-2 focus:ring-[#5a3e2b]" required />
+          <button type="submit" class="bg-[#5a3e2b] text-white py-2 rounded hover:bg-[#7b523c] transition">Log In / Sign Up</button>
+        </form>
+      </div>
+    </div>
+
+    <!-- Widget Menu + Profile Icon -->
+<div class="fixed top-6 right-6 z-20 flex items-center gap-4">
+  <button id="social-button" class="w-10 h-10 flex items-center justify-center border-2 border-[#5a3e2b] rounded-full hover:bg-[#fdfaf5] transition">
+    <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="#5a3e2b" class="w-6 h-6">
+      <path stroke-linecap="round" stroke-linejoin="round" d="M8.25 15.75H6a2.25 2.25 0 01-2.25-2.25V6.75A2.25 2.25 0 016 4.5h12a2.25 2.25 0 012.25 2.25v6.75a2.25 2.25 0 01-2.25 2.25h-2.25l-4.5 4.5v-4.5z" />
+    </svg>
+  </button>
+  <button class="bg-[#5a3e2b] text-white px-4 py-2 rounded-full shadow hover:bg-[#7b523c]">+ Add Widget</button>
+  <div class="relative" id="profile-menu-wrapper">
+    <img id="profile-icon" src="https://upload.wikimedia.org/wikipedia/commons/9/99/Sample_User_Icon.png" alt="Profile" class="w-10 h-10 rounded-full border-2 border-[#5a3e2b] cursor-pointer" />
+    <div id="profile-menu" class="dropdown-menu absolute right-0 mt-2 w-40 bg-white border border-[#d6bfa6] rounded-xl shadow-lg p-2 hidden">
+      <button class="w-full text-left px-2 py-1 text-[#5a3e2b] hover:bg-[#fdfaf5] rounded">Edit Profile</button>
+      <button class="w-full text-left px-2 py-1 text-[#5a3e2b] hover:bg-[#fdfaf5] rounded">Settings</button>
+      <button id="logout-button" class="w-full text-left px-2 py-1 text-[#5a3e2b] hover:bg-[#fdfaf5] rounded">Log Out</button>
+    </div>
+  </div>
+</div>
+  </div>
+
+<!-- Social Modal -->
+<div id="social-modal" class="fixed inset-0 bg-black bg-opacity-40 flex items-center justify-center z-50 hidden">
+  <div class="bg-white rounded-xl shadow-lg p-6 w-full max-w-lg">
+    <h2 class="text-2xl font-bold text-[#5a3e2b] mb-4 text-center">Social</h2>
+    <div class="flex justify-center space-x-4 mb-4">
+  <button id="tab-dms" class="relative px-4 py-2 bg-[#fdfaf5] border border-[#5a3e2b] text-[#5a3e2b] rounded-t-lg">
+    <svg xmlns="http://www.w3.org/2000/svg" class="w-5 h-5 inline-block mr-1" fill="none" viewBox="0 0 24 24" stroke="#5a3e2b" stroke-width="1.5">
+      <path stroke-linecap="round" stroke-linejoin="round" d="M21.75 6.75v10.5a2.25 2.25 0 01-2.25 2.25H4.5A2.25 2.25 0 012.25 17.25V6.75A2.25 2.25 0 014.5 4.5h15A2.25 2.25 0 0121.75 6.75z" />
+    </svg>
+    DMs
+  </button>
+  <button id="tab-hives" class="relative px-4 py-2 bg-[#fdfaf5] border border-[#5a3e2b] text-[#5a3e2b] rounded-t-lg">
+    <svg xmlns="http://www.w3.org/2000/svg" class="w-5 h-5 inline-block mr-1" fill="none" viewBox="0 0 24 24" stroke="#5a3e2b" stroke-width="1.5">
+      <path stroke-linecap="round" stroke-linejoin="round" d="M12 2.25l4.5 2.598v5.196L12 12.75 7.5 10.044V4.848L12 2.25zM12 12.75l4.5 2.598v5.196L12 21.75l-4.5-2.598v-5.196L12 12.75z" />
+    </svg>
+    Hives
+  </button>
+  <button id="tab-friends" class="relative px-4 py-2 bg-[#fdfaf5] border border-[#5a3e2b] text-[#5a3e2b] rounded-t-lg">
+    <svg xmlns="http://www.w3.org/2000/svg" class="w-5 h-5 inline-block mr-1" fill="none" viewBox="0 0 24 24" stroke="#5a3e2b" stroke-width="1.5">
+      <path stroke-linecap="round" stroke-linejoin="round" d="M12 4.5v15m7.5-7.5h-15" />
+    </svg>
+    Add Friend
+  </button>
+</div>
+    <div id="social-content" class="text-[#5a3e2b] text-sm text-center">
+      <p>Select a tab to begin.</p>
+    </div>
+    <div class="mt-4 text-center">
+      <button id="close-social" class="text-[#5a3e2b] hover:underline text-sm">Close</button>
+    </div>
+  </div>
+</div>
+
+<!-- Settings Modal -->
+<div id="settings-modal" class="fixed inset-0 bg-black bg-opacity-40 flex items-center justify-center z-50 hidden">
+  <div class="bg-white rounded-xl shadow-lg p-8 w-full max-w-md">
+    <h2 class="text-2xl font-bold text-[#5a3e2b] mb-4 text-center">Settings</h2>
+
+    <div class="mb-6">
+      <h3 class="text-lg font-semibold text-[#5a3e2b] mb-2">About Your Account</h3>
+      <ul class="text-sm text-[#5a3e2b] space-y-1">
+  <li><strong>Profile Picture:</strong><br/><img id="settings-profile-pic" class="w-16 h-16 mt-1 rounded-full border border-[#5a3e2b]" src="https://upload.wikimedia.org/wikipedia/commons/9/99/Sample_User_Icon.png" alt="Profile" /></li>
+  <li><strong>Email:</strong> <span id="settings-email"></span></li>
+  <li><strong>Username:</strong> <span id="settings-username"></span></li>
+  <li><strong>Buzz:</strong> <span id="settings-buzz"></span></li>
+  <li><strong>Account Created:</strong> <span id="settings-created"></span></li>
+</ul>
+    </div>
+
+    <div class="mb-6">
+      <h3 class="text-lg font-semibold text-[#5a3e2b] mb-2">Blocked Users</h3>
+      <p class="text-sm text-[#5a3e2b] italic">(Coming soon)</p>
+    </div>
+
+    <div class="mb-6">
+      <h3 class="text-lg font-semibold text-[#5a3e2b] mb-2">Danger Zone</h3>
+      <button class="text-red-600 text-sm hover:underline">Delete My Account</button>
+    </div>
+
+    <button type="button" id="close-settings" class="text-[#5a3e2b] hover:underline text-sm mt-2">Close</button>
+  </div>
+</div>
+    <div class="relative z-10 mt-16 w-full h-[80vh] flex flex-wrap items-start justify-center gap-6 px-6" id="widget-area">
+      
+    </div>
+  <!-- Edit Profile Modal -->
+<div id="edit-profile-modal" class="fixed inset-0 bg-black bg-opacity-40 flex items-center justify-center z-50 hidden">
+  <div class="bg-white rounded-xl shadow-lg p-8 w-full max-w-md">
+    <h2 class="text-2xl font-bold text-[#5a3e2b] mb-4 text-center">Edit Profile</h2>
+    <form class="flex flex-col gap-4">
+      <input type="text" placeholder="Username" class="border border-[#d6bfa6] rounded p-2 focus:outline-none focus:ring-2 focus:ring-[#5a3e2b]" />
+      <input type="file" id="profile-picture-file" accept="image/*" class="border border-[#d6bfa6] rounded p-2 focus:outline-none focus:ring-2 focus:ring-[#5a3e2b]" />
+      <textarea placeholder="Your Buzz (status)" class="border border-[#d6bfa6] rounded p-2 focus:outline-none focus:ring-2 focus:ring-[#5a3e2b]" rows="3"></textarea>
+      <button type="submit" class="bg-[#5a3e2b] text-white py-2 rounded hover:bg-[#7b523c] transition">Save</button>
+      <button type="button" id="close-edit-profile" class="text-[#5a3e2b] hover:underline text-sm">Cancel</button>
+    </form>
+  </div>
+</div>
+
+<script>
+  const editProfileBtn = document.querySelector('#profile-menu button:nth-child(1)');
+  const editProfileModal = document.getElementById('edit-profile-modal');
+  const closeEditProfileBtn = document.getElementById('close-edit-profile');
+
+  editProfileBtn.addEventListener('click', () => {
+    editProfileModal.classList.remove('hidden');
+  });
+
+  closeEditProfileBtn.addEventListener('click', () => {
+    editProfileModal.classList.add('hidden');
+  });
+  const profileWrapper = document.getElementById('profile-menu-wrapper');
+  const profileMenu = document.getElementById('profile-menu');
+  const profileBtn = document.getElementById('profile-icon');
+
+  profileBtn.addEventListener('click', (e) => {
+    e.stopPropagation();
+    const isHidden = profileMenu.classList.contains('hidden');
+    document.querySelectorAll('.dropdown-menu').forEach(menu => menu.classList.add('hidden'));
+    if (isHidden) {
+      profileMenu.classList.remove('hidden');
+    }
+  });
+
+  document.addEventListener('click', (e) => {
+    if (!profileWrapper.contains(e.target) && !profileMenu.contains(e.target)) {
+      profileMenu.classList.add('hidden');
+    }
+  });
+document.getElementById('tab-dms').addEventListener('click', () => {
+  document.getElementById('social-content').innerHTML = '<p><strong>Direct Messages</strong><br>Coming soon: your recent chats will appear here.</p>';
+});
+
+document.getElementById('tab-hives').addEventListener('click', () => {
+  document.getElementById('social-content').innerHTML = '<p><strong>Hives</strong><br>Coming soon: your group chats will appear here.</p>';
+});
+
+document.getElementById('tab-friends').addEventListener('click', () => {
+  document.getElementById('social-content').innerHTML = '<p><strong>Add Friend</strong><br>Feature coming soon: search and add friends by email or username.</p>';
+});
+</script>
+</body>
+</html>
